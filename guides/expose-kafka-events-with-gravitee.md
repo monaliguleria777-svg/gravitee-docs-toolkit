@@ -104,7 +104,8 @@ In this part you create a **Message API**. Clients send events with HTTP POST, a
 <!-- Fill this in from your own run. -->
 
 | Problem | Cause | Fix |
-|---|---|---|
+|---|---|---| 
+| Docker shows "Virtual Machine Platform is not enabled" (Windows) | A Windows feature that WSL 2 needs is turned off | In PowerShell as administrator, run `Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform -All`, then restart Windows |
 | **Create Message API** shows an upgrade message | Your licence doesn't include message APIs | Request a licence that includes `apim-en-message-reactor` |
 | The event doesn't reach Kafka | The Gateway pod can't reach the broker | Check the bootstrap address and Kafka's advertised listener |
 
@@ -116,4 +117,4 @@ docker rm -f kafka
 
 ---
 
-*Part 1 is based on the Apache Kafka Docker quickstart. Part 2 is based on Gravitee's "Create a Message API" guide (November 2026). Tested on: \_\_\_ (add your setup after you run it).*
+*Part 1 tested on Windows with Docker Desktop 29.9.3 and Kafka 3.9.0, 23 Nov 2026. Part 2 (Gravitee Message API) not yet tested – it needs a Gravitee licence.*
