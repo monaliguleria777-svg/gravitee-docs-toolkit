@@ -6,9 +6,10 @@ A docs-as-code portfolio built around Gravitee-style documentation (GitBook Mark
 |---|---|---|
 | [Docs checker](checker/check.py) + [rules](rules.yaml) | Rule-based checker with an optional Claude review | ✅ Tested locally: catches the planted issues in a sample page; both guides pass |
 | [GitHub Action](.github/workflows/docs-check.yml) | Runs the checker on every pull request | ✅ Tested: [see pull request #1](https://github.com/monaliguleria777-svg/gravitee-docs-toolkit/pull/1) |
+| [Kafka guide](guides/expose-kafka-events-with-gravitee.md) | Run Kafka, then expose events through Gravitee | ✅ Part 1 tested on Windows with Docker (23 Nov 2026) · 🔄 Gravitee part needs a licence |
+| [Kubernetes/Helm guide](guides/install-gravitee-on-kubernetes-with-helm.md) | Install Gravitee on a local Kubernetes cluster | 🔄 Drafted from Gravitee's official docs; testing this week |
 | [Vale style](styles/Gravitee) | Same house rules for Vale | 🔄 Written; testing this week |
 | [n8n workflow](n8n/README.md) | AI review: PR → Claude → one review comment | 🔄 Logic tested; full n8n run this week |
-| Guides: [Kubernetes/Helm install](guides/install-gravitee-on-kubernetes-with-helm.md) and [Kafka how-to](guides/expose-kafka-events-with-gravitee.md) | Two how-to guides, both passing the checker | 🔄 Drafted from Gravitee's official docs; hands-on testing this week |
 
 The guides are real content, the checker keeps them consistent, and n8n automates the review.
 
@@ -64,7 +65,7 @@ The [GitHub Action](.github/workflows/docs-check.yml) checks only the Markdown f
 
 ## Next steps
 
-- [ ] Run the Vale rules and add Vale to the GitHub Action
+- [ ] Test the Kubernetes/Helm guide hands-on
 - [ ] Run the n8n workflow end to end and add a screenshot
-- [ ] Test both guides hands-on and fill in their troubleshooting tables
+- [ ] Run the Vale rules and add Vale to the GitHub Action
 - [ ] Check that relative links and image paths exist
