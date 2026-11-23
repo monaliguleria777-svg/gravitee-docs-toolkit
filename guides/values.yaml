@@ -1,0 +1,244 @@
+# Gravitee Gamma - single-hostname Helm values for local Kubernetes
+# Source: Gravitee "Self-host with Helm" guide (Gamma). Replace the Elasticsearch password before installing.
+
+mongo:
+  uri: mongodb://gravitee-mongodb.gravitee-gamma.svc.cluster.local:27017/gravitee?serverSelectionTimeoutMS=5000&connectTimeoutMS=5000&socketTimeoutMS=5000
+
+es:
+  enabled: true
+  endpoints:
+    - https://elasticsearch-master:9200
+  security:
+    enabled: true
+    username: elastic
+    password: [ELASTIC PASSWORD FROM ES INSTALLATION]
+  ssl:
+    verifyHostname: false
+    trustAll: true
+
+management:
+  type: mongodb
+
+ratelimit:
+  type: mongodb
+
+mongodb:
+  enabled: false
+elasticsearch:
+  enabled: false
+
+installation:
+  type: standalone
+  api:
+    url: http://gamma.localhost/management
+  standalone:
+    console:
+      urls:
+        - orgId: DEFAULT
+          url: http://gamma.localhost/console/
+    portal:
+      urls:
+        - envId: DEFAULT
+          url: http://gamma.localhost/dev/
+    gamma-console:
+      urls:
+        - orgId: DEFAULT
+          url: http://gamma.localhost/
+
+gamma:
+  enabled: true
+
+api:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: graviteeio/apim-management-api
+    tag: "4.12"
+    pullPolicy: Always
+
+  env:
+    - name: gravitee_installation_api_url
+      value: "http://gamma.localhost/management"
+    - name: gravitee_http_cors_enabled
+      value: "true"
+    - name: gravitee_http_cors_allow-origin
+      value: "http://gamma.localhost"
+    - name: gravitee_http_cors_allow-headers
+      value: "Authorization,Content-Type,X-Requested-With,Accept,Origin,Access-Control-Request-Method,Access-Control-Request-Headers,Cookie"
+    - name: gravitee_http_cors_allow-methods
+      value: "GET,POST,PUT,DELETE,OPTIONS"
+    - name: gravitee_http_cors_exposed-headers
+      value: "X-Total-Count,Set-Cookie"
+    - name: gravitee_http_cors_allow-credentials
+      value: "true"
+    - name: gravitee_http_cookie_sameSite
+      value: "Lax"
+    - name: gravitee_http_cookie_secure
+      value: "false"
+
+  service:
+    type: ClusterIP
+    externalPort: 83
+    internalPort: 8083
+
+  ingress:
+    management:
+      enabled: true
+      ingressClassName: nginx
+      scheme: http
+      pathType: Prefix
+      path: /management
+      hosts:
+        - gamma.localhost
+      annotations: {}
+    portal:
+      enabled: true
+      ingressClassName: nginx
+      scheme: http
+      pathType: Prefix
+      path: /portal
+      hosts:
+        - gamma.localhost
+      annotations: {}
+    gamma:
+      enabled: true
+      ingressClassName: nginx
+      scheme: http
+      pathType: Prefix
+      path: /gamma
+      hosts:
+        - gamma.localhost
+      annotations: {}
+
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+
+gateway:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: graviteeio/apim-gateway
+    tag: "4.12"
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    externalPort: 82
+    internalPort: 8082
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    pathType: Prefix
+    path: /
+    hosts:
+      - api.localhost
+
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+
+ui:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: graviteeio/apim-management-ui
+    tag: "4.12"
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    externalPort: 8002
+    internalPort: 8080
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    pathType: ImplementationSpecific
+    path: /console(/.*)?
+    hosts:
+      - gamma.localhost
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /$1
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "250m"
+
+portal:
+  enabled: true
+  defaultPortal: "classic"
+  replicaCount: 1
+  image:
+    repository: graviteeio/apim-portal-ui
+    tag: "4.12"
+    pullPolicy: Always
+
+  env:
+    - name: PORTAL_BASE_HREF
+      value: /dev/
+
+  service:
+    type: ClusterIP
+    externalPort: 8003
+    internalPort: 8080
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    pathType: ImplementationSpecific
+    path: /dev(/.*)?
+    hosts:
+      - gamma.localhost
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /$1
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "250m"
+
+gammaUi:
+  enabled: true
+  image:
+    repository: graviteeio/gamma-ui
+    tag: "4.12"
+    pullPolicy: Always
+  app:
+    gammaBaseURL: "http://gamma.localhost/gamma"
+  env:
+    - name: GAMMA_CONSOLE_BASE_HREF
+      value: /
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    pathType: ImplementationSpecific
+    path: /(.*)
+    hosts:
+      - gamma.localhost
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /$1
+
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
