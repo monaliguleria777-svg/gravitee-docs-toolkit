@@ -101,11 +101,10 @@ In this part you create a **Message API**. Clients send events with HTTP POST, a
 
 ## Troubleshooting
 
-<!-- Fill this in from your own run. -->
-
 | Problem | Cause | Fix |
-|---|---|---| 
+|---|---|---|
 | Docker shows "Virtual Machine Platform is not enabled" (Windows) | A Windows feature that WSL 2 needs is turned off | In PowerShell as administrator, run `Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform -All`, then restart Windows |
+| `docker` commands fail with "500 Internal Server Error" or "cannot find the file specified" | The Docker Desktop engine isn't running | Open Docker Desktop and wait for **Engine running** before running commands |
 | **Create Message API** shows an upgrade message | Your licence doesn't include message APIs | Request a licence that includes `apim-en-message-reactor` |
 | The event doesn't reach Kafka | The Gateway pod can't reach the broker | Check the bootstrap address and Kafka's advertised listener |
 
