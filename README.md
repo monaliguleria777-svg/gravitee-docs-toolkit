@@ -7,7 +7,7 @@ A docs-as-code portfolio built around Gravitee-style documentation (GitBook Mark
 | [Docs checker](checker/check.py) + [rules](rules.yaml) | Rule-based checker with an optional Claude review | ✅ Tested locally: catches the planted issues in a sample page; both guides pass |
 | [GitHub Action](.github/workflows/docs-check.yml) | Runs the checker on every pull request | ✅ Tested: [see pull request #1](https://github.com/monaliguleria777-svg/gravitee-docs-toolkit/pull/1) |
 | [Kafka guide](guides/expose-kafka-events-with-gravitee.md) | Run Kafka, then expose events through Gravitee | ✅ Part 1 tested on Windows with Docker (23 Nov 2026) · 🔄 Gravitee part needs a licence |
-| [Kubernetes/Helm guide](guides/install-gravitee-on-kubernetes-with-helm.md) | Install Gravitee on a local Kubernetes cluster | 🔄 Drafted from Gravitee's official docs; testing this week |
+| [Kubernetes/Helm guide](guides/install-gravitee-on-kubernetes-with-helm.md) | Install Gravitee on a local Kubernetes cluster | ✅ Tested on Windows: Docker Desktop Kubernetes, Helm 4, chart 4.13.6 – all pods running, console login works (23 Nov 2026) |
 | [Vale style](styles/Gravitee) | Same house rules for Vale | 🔄 Written; testing this week |
 | [n8n workflow](n8n/README.md) | AI review: PR → Claude → one review comment | 🔄 Logic tested; full n8n run this week |
 
@@ -63,9 +63,20 @@ The [GitHub Action](.github/workflows/docs-check.yml) checks only the Markdown f
 - **Confirmed** from Gravitee's public docs (Nov 2026): GitBook block syntax, product names as written in page titles, and the fork → branch → pull request contribution flow.
 - **Assumed** from common developer-docs practice (Google and Microsoft style guides): word choice, sentence case, sentence length, alt text and link text. Gravitee's own style guide page wasn't online when I built this, so these are defaults to adjust to the team's real guide.
 
+## Proof
+
+| Test | Screenshot |
+|---|---|
+| Docs checker run locally | ![Docs checker results](checker-results.png) |
+| Kafka in Docker: sending events (producer) | ![Kafka producer](kafka-producer.png) |
+| Kafka in Docker: events received (consumer) | ![Kafka consumer](kafka-test.png) |
+| Gravitee on Kubernetes: all pods running | ![Kubernetes pods running](kubernetes-pods-running.png) |
+| Signed in to the Gravitee console | ![Gravitee console](gravitee-console-login.png) |
+
 ## Next steps
 
-- [ ] Test the Kubernetes/Helm guide hands-on
+- [x] Test the Kubernetes/Helm guide hands-on
+- [ ] Expose a Kafka topic through Gravitee's Event Gateway (needs a licence)
 - [ ] Run the n8n workflow end to end and add a screenshot
 - [ ] Run the Vale rules and add Vale to the GitHub Action
 - [ ] Check that relative links and image paths exist
