@@ -1,0 +1,8 @@
+extends: substitution
+message: "Use '%s' instead of '%s' (works for mouse, keyboard and touch)."
+level: warning
+ignorecase: true
+swap:
+  click on: select
+  e\.g\.: for example
+  i\.e\.: that is

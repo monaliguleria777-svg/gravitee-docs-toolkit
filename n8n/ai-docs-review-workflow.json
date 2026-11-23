@@ -1,0 +1,142 @@
+{
+  "name": "AI docs review on pull requests",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "docs-pr-review",
+        "options": {}
+      },
+      "name": "GitHub PR webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "webhookId": "docs-pr-review"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Only review when a PR is opened or updated. Pull out what later steps need.\nconst body = $input.first().json.body;\nif (!body || !body.pull_request || !['opened', 'synchronize', 'reopened'].includes(body.action)) {\n  return [];\n}\nreturn [{ json: {\n  repo: body.repository.full_name,\n  prNumber: body.pull_request.number,\n  prTitle: body.pull_request.title,\n  headSha: body.pull_request.head.sha,\n} }];"
+      },
+      "name": "Keep opened or updated PRs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{ $json.repo }}/pulls/{{ $json.prNumber }}/files",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "name": "List changed files",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 300],
+      "credentials": {
+        "httpHeaderAuth": { "id": "", "name": "GitHub token" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Keep only Markdown pages that were added or changed.\nconst pr = $('Keep opened or updated PRs').first().json;\nconst files = $input.all().flatMap(i => Array.isArray(i.json) ? i.json : [i.json]);\nreturn files\n  .filter(f => f.filename && f.filename.endsWith('.md') && f.status !== 'removed')\n  .slice(0, 10) // cost guard: review at most 10 pages per PR\n  .map(f => ({ json: { ...pr, file: f.filename, rawUrl: f.raw_url } }));"
+      },
+      "name": "Keep Markdown pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.rawUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": { "response": { "responseFormat": "text", "outputPropertyName": "page" } }
+        }
+      },
+      "name": "Get page text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 300],
+      "credentials": {
+        "httpHeaderAuth": { "id": "", "name": "GitHub token" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the Claude request. Number the lines so every finding can point to one.\nconst items = $input.all();\nconst pages = $('Keep Markdown pages').all();\nreturn items.map((item, idx) => {\n  const meta = pages[idx].json;\n  const numbered = String(item.json.page).split('\\n').map((l, n) => `${String(n + 1).padStart(4)}  ${l}`).join('\\n');\n  const prompt = `You are reviewing one page of Gravitee product documentation (GitBook Markdown).\\nA rule-based linter already checks product names, filler words and GitBook syntax - do NOT repeat those.\\nOnly report judgement calls:\\n- Are prerequisites listed before the first step?\\n- Is each procedure a numbered list of single actions, with the expected result stated?\\n- Is any step ambiguous, missing or out of order?\\n- Are acronyms and jargon explained on first use?\\n- Do code samples look complete and runnable?\\nRules: only report real problems you can point to. Never invent product behaviour - if unsure, write \"Check with engineering:\". If the page is fine, reply exactly: No issues.\\nFormat: one issue per line as  LINE | problem | suggested fix\\n\\nPage: ${meta.file}\\n${numbered}`;\n  return { json: { ...meta, claudeBody: {\n    model: 'claude-sonnet-4-5',\n    max_tokens: 1500,\n    messages: [{ role: 'user', content: prompt }]\n  } } };\n});"
+      },
+      "name": "Build review prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.claudeBody) }}",
+        "options": {}
+      },
+      "name": "Claude review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 300],
+      "credentials": {
+        "httpHeaderAuth": { "id": "", "name": "Anthropic API key" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine every page's review into ONE pull-request comment (less noise than many comments).\nconst reviews = $input.all();\nconst pages = $('Build review prompt').all();\nconst pr = pages[0].json;\nlet total = 0;\nconst sections = reviews.map((r, idx) => {\n  const file = pages[idx].json.file;\n  const text = (r.json.content || []).filter(b => b.type === 'text').map(b => b.text).join('\\n').trim();\n  const rows = text.split('\\n').map(l => l.split('|').map(s => s.trim())).filter(p => p.length >= 3 && /^\\d+$/.test(p[0]));\n  total += rows.length;\n  if (!rows.length) return `### ${file}\\nNo issues found.`;\n  const table = rows.map(p => `| ${p[0]} | ${p[1]} | ${p[2]} |`).join('\\n');\n  return `### ${file}\\n| Line | Problem | Suggested fix |\\n|---|---|---|\\n${table}`;\n});\nconst comment = `## AI docs review\\n\\n${total} suggestion(s) across ${pages.length} page(s). These are suggestions from Claude - a writer decides what to accept. Style and syntax are checked separately by the docs checker.\\n\\n${sections.join('\\n\\n')}`;\nreturn [{ json: { repo: pr.repo, prNumber: pr.prNumber, prTitle: pr.prTitle, total, comment } }];"
+      },
+      "name": "Format one PR comment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/{{ $json.repo }}/issues/{{ $json.prNumber }}/comments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ body: $json.comment }) }}",
+        "options": {}
+      },
+      "name": "Post comment on PR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1760, 300],
+      "credentials": {
+        "httpHeaderAuth": { "id": "", "name": "GitHub token" }
+      }
+    }
+  ],
+  "connections": {
+    "GitHub PR webhook": { "main": [[{ "node": "Keep opened or updated PRs", "type": "main", "index": 0 }]] },
+    "Keep opened or updated PRs": { "main": [[{ "node": "List changed files", "type": "main", "index": 0 }]] },
+    "List changed files": { "main": [[{ "node": "Keep Markdown pages", "type": "main", "index": 0 }]] },
+    "Keep Markdown pages": { "main": [[{ "node": "Get page text", "type": "main", "index": 0 }]] },
+    "Get page text": { "main": [[{ "node": "Build review prompt", "type": "main", "index": 0 }]] },
+    "Build review prompt": { "main": [[{ "node": "Claude review", "type": "main", "index": 0 }]] },
+    "Claude review": { "main": [[{ "node": "Format one PR comment", "type": "main", "index": 0 }]] },
+    "Format one PR comment": { "main": [[{ "node": "Post comment on PR", "type": "main", "index": 0 }]] }
+  },
+  "settings": {},
+  "pinData": {}
+}

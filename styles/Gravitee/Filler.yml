@@ -1,0 +1,12 @@
+extends: existence
+message: "Remove '%s' – it adds nothing or talks down to the reader."
+level: warning
+ignorecase: true
+tokens:
+  - simply
+  - just
+  - easy
+  - easily
+  - obviously
+  - of course
+  - basically

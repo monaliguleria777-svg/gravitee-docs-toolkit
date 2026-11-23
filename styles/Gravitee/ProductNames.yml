@@ -1,0 +1,11 @@
+extends: substitution
+message: "Use '%s', not '%s'."
+level: warning
+ignorecase: false
+swap:
+  gravitee: Gravitee
+  API management: API Management
+  Developer portal: Developer Portal
+  developer portal: Developer Portal
+  kubernetes: Kubernetes
+  Github: GitHub

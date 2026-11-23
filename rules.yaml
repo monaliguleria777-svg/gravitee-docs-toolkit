@@ -1,0 +1,76 @@
+# Gravitee docs checker – rule set
+#
+# Source notes:
+# - "confirmed": seen on documentation.gravitee.io or the gravitee-platform-docs repo (Nov 2026).
+# - "assumed": common developer-docs practice (Google / Microsoft style). Gravitee's own
+#   "Style Guide and Best Practices" page was no longer online when this was built, so
+#   these are editable defaults, not Gravitee's official rules.
+
+# Product names – confirmed from Gravitee docs page titles.
+# Key = correct form; values = wrong spellings to flag (matched case-sensitively, whole words).
+product_names:
+  Gravitee: ["gravitee", "GraviteeIO", "Gravitee IO"]
+  "API Management": ["API management", "Api Management", "api management"]
+  "Access Management": ["access management"]
+  "Event Stream Management": ["event stream management", "Event stream management"]
+  "Agent Management": ["agent management"]
+  "Developer Portal": ["developer portal", "Developer portal", "dev portal", "Dev Portal"]
+  "Policy Studio": ["policy studio", "Policy studio"]
+  Gateway: ["gateway"]          # assumed: Gravitee capitalises Gateway as a product component
+  Kafka: ["kafka"]
+  Kubernetes: ["kubernetes", "K8S"]
+  Helm: ["helm"]
+  GitHub: ["Github", "github"]
+
+# Words that talk down to readers or add nothing – assumed.
+avoid_words:
+  simply: "Remove 'simply' – it can make readers feel slow if the step isn't simple for them."
+  just: "Remove 'just' – usually filler."
+  easy: "Avoid 'easy' – let the reader decide."
+  easily: "Avoid 'easily' – let the reader decide."
+  obviously: "Remove 'obviously'."
+  "of course": "Remove 'of course'."
+  basically: "Remove 'basically'."
+  please: "Drop 'please' in instructions – use a direct imperative."
+  "click on": "Use 'select' (works for keyboard, mouse and touch)."
+  "e.g.": "Use 'for example'."
+  "i.e.": "Use 'that is'."
+  etc: "Avoid 'etc.' – list the items or say 'and more'."
+  whitelist: "Use 'allowlist'."
+  blacklist: "Use 'denylist' or 'blocklist'."
+  master: "Use 'main' (branch) or 'primary'."
+
+# GitBook block syntax – confirmed in Gravitee docs.
+gitbook:
+  allowed_hint_styles: [info, success, warning, danger]
+  paired_tags:
+    hint: endhint
+    tabs: endtabs
+    tab: endtab
+    code: endcode
+    stepper: endstepper
+    step: endstep
+
+limits:
+  max_sentence_words: 30        # assumed
+  max_heading_words: 10         # assumed
+
+headings:
+  sentence_case: true           # assumed – flag Title Case Headings
+  # Words allowed to stay capitalised inside headings (product names, acronyms).
+  keep_caps: [Gravitee, API, APIs, Management, Gateway, Developer, Portal, Policy, Studio,
+              Kafka, Kubernetes, Helm, Docker, GitHub, Git, OAuth, JWT, MCP, A2A, LLM,
+              REST, HTTP, HTTPS, TLS, JSON, YAML, SDK, CLI, UI, Event, Stream, Access,
+              Agent, Edge, AI, I, MongoDB, Elasticsearch, NGINX, Message, Console,
+              Docker, Desktop, Apache, Claude, Vale, GitBook, Kafka]
+
+ai_review:
+  enabled_by_default: false
+  model: claude-sonnet-4-5      # change to any model your API key can use
+  focus:
+    - Is each procedure a numbered list of single actions, with the expected result stated?
+    - Are prerequisites listed before the first step?
+    - Is any step ambiguous, missing, or in the wrong order?
+    - Does the page mix explanation, how-to and reference content that should be split (Diátaxis)?
+    - Are there unexplained acronyms or jargon on first use?
+    - Do code samples look complete and runnable (no unexplained placeholders)?
